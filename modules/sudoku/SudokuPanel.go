@@ -48,9 +48,12 @@ func NewSudokuPanel() *SudokuPanel {
 	s.content = container.NewWithoutLayout(sudokuGrid, //边框占掉了一些距离 TODO 后面整一个弹性布局
 		s.hoverCircle)
 
+	dirework := ui.NewFireworkLauncher()
+	s.content = container.NewStack(s.content, dirework)
+
 	s.ExtendBaseWidget(s)
 
-	// 事件订阅
+	// 事件订阅 游戏等级变更
 	globel.EventBus().Subscribe(event.GameLevelChange, func(event event.Event) {
 		go func() {
 			fyne.DoAndWait(func() {
@@ -58,6 +61,20 @@ func NewSudokuPanel() *SudokuPanel {
 			})
 		}()
 	})
+	//事件订阅：游戏胜利展示小特效
+	// TODO 优化展示，
+	globel.EventBus().Subscribe(event.GameVictory, func(event event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				// 中心点展示烟花特效
+				dirework.LaunchFirework(fyne.NewPos(s.content.Size().Width/2, s.content.Size().Height/2), ui.FireworkConfig{
+					ParticleCount: 50,
+					SpeedBase:     5.0,
+				})
+			})
+		}()
+	})
+
 	return s
 }
 

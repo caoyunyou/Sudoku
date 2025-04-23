@@ -26,6 +26,7 @@ func ContainerGenerate() *fyne.Container {
 			globel.CreateGameByLevel(enum)
 			// 发送事件
 			globel.EventBus().Publish(event.Event{Type: event.GameLevelChange})
+			//globel.EventBus().Publish(event.Event{Type: event.GameVictory})
 		}))
 
 	}

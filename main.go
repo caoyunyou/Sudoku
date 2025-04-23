@@ -13,25 +13,7 @@ import (
 
 func main() {
 	setupDesktop()
-	//test()
-}
-
-func test() {
-	//bus := event.NewEventBus()
-	//
-	//// 订阅 "user.login" 事件
-	//bus.Subscribe("user.login", func(event event.Event) {
-	//	fmt.Printf("Received event: %s, data: %v\n", event.Type, event.Data)
-	//})
-	//
-	//// 发布事件
-	//bus.Publish(event.Event{
-	//	Type: "user.login",
-	//	Data: map[string]string{"username": "john"},
-	//})
-	//
-	//// 保持主 goroutine 运行一段时间（否则程序会立即退出）
-	//select {}
+	//test.FireWork()
 }
 
 // setupDesktop 程序启动

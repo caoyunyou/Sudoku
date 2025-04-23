@@ -20,22 +20,6 @@ func NewSudokuContainer() *SudokuContainer {
 	s := &SudokuContainer{}
 	sudokuTip := ui.NewSudokuTip(fyne.NewSize(540, 50))
 	sudokuPanel := NewSudokuPanel()
-	// 等级提示以及时间提示
-	//levelContainer := container.NewHBox()
-	//hardLevel := widget.NewLabel("难易度: ")
-	//levelText := canvas.NewText("高级", utils.HTML2FyneRGB(253, 94, 94))
-	//levelContainer.Add(hardLevel)
-	//levelContainer.Add(levelText)
-	//
-	//timeContainer := container.NewHBox()
-	//useTime := widget.NewLabel("时间: ")
-	//timeText := canvas.NewText("00:00", utils.HTML2FyneRGB(253, 94, 94))
-	//timeContainer.Add(useTime)
-	//timeContainer.Add(timeText)
-	//infoContainer := container.NewCenter(container.NewHBox(levelContainer, timeContainer))
-	// 创建数独网格
-	//sudokuGrid = utils.SetBackGroundColor(sudokuGrid, utils.HTML2FyneRGB(30, 31, 34))
-
 	// 加一个默认的悬浮
 	s.content = container.NewVBox(sudokuTip,
 		sudokuPanel)

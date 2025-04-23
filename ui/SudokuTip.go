@@ -3,7 +3,6 @@ package ui
 import (
 	"com.cyy/sudoku/event"
 	"com.cyy/sudoku/globel"
-	"com.cyy/sudoku/utils"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -15,7 +14,7 @@ type SudokuTip struct {
 	widget.BaseWidget
 	content   *fyne.Container
 	levelText *canvas.Text
-	timeText  *canvas.Text
+	timeText  *TimerState
 }
 
 func NewSudokuTip(size fyne.Size) *SudokuTip {
@@ -33,8 +32,10 @@ func NewSudokuTip(size fyne.Size) *SudokuTip {
 	levelContainer.Add(levelText)
 
 	timeContainer := container.NewHBox()
+
 	useTime := widget.NewLabel("时间: ")
-	timeText := canvas.NewText("00:00", utils.HTML2FyneRGB(253, 94, 94))
+	//timeText := canvas.NewText("00:00", utils.HTML2FyneRGB(253, 94, 94))
+	timeText := NewTimer()
 	s.timeText = timeText
 	timeContainer.Add(useTime)
 	timeContainer.Add(timeText)
@@ -49,6 +50,16 @@ func NewSudokuTip(size fyne.Size) *SudokuTip {
 			})
 		}()
 	})
+
+	// 订阅时间开始事件
+	globel.EventBus().Subscribe(event.TimeStart, func(event event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				timeText.TimeStart()
+			})
+		}()
+	})
+
 	return s
 }
 
