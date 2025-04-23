@@ -11,19 +11,20 @@ import (
 	"time"
 )
 
-// 烟花特效批次配置
+// FireworkConfig 烟花特效批次配置
 type FireworkConfig struct {
 	Color         color.Color //颜色
 	ParticleCount int         //粒子总数
 	SpeedBase     float64     //速度
 }
 
-// 烟花特效管理器
+// FireworkLauncher 烟花特效管理器
 type FireworkLauncher struct {
 	widget.BaseWidget
 	container       *fyne.Container
 	activeParticles []*Particle
 	animating       bool
+	pos             fyne.Position
 }
 
 type Particle struct {
@@ -44,6 +45,40 @@ func (fl *FireworkLauncher) CreateRenderer() fyne.WidgetRenderer {
 }
 
 // LaunchFirework 生成指定配置的烟花特效（线程安全）
+//func (fl *FireworkLauncher) LaunchFirework(pos fyne.Position, config FireworkConfig) {
+//	if fl.animating {
+//		return
+//	}
+//	fl.animating = true
+//	fl.pos = pos
+//
+//	go func() {
+//		defer func() { fl.animating = false }()
+//
+//		// 连续触发三次
+//		for i := 0; i < 3; i++ {
+//			// 每次生成前清理旧粒子
+//			fl.cleanParticles()
+//
+//			// 根据次数修改配置
+//			currentConfig := config
+//			currentConfig.Color = generateStageColor(i)
+//			currentConfig.SpeedBase += float64(i) * 0.5
+//
+//			// 生成粒子
+//			particles := fl.createParticles(pos, currentConfig)
+//			fl.activeParticles = particles
+//
+//			// 运行动画1秒
+//			fl.runAnimation(1 * time.Second)
+//
+//			// 清理本次粒子
+//			fl.cleanParticles()
+//		}
+//	}()
+//}
+
+// LaunchFirework 生成指定配置的烟花特效（线程安全）
 func (fl *FireworkLauncher) LaunchFirework(pos fyne.Position, config FireworkConfig) {
 	if fl.animating {
 		return
@@ -52,27 +87,14 @@ func (fl *FireworkLauncher) LaunchFirework(pos fyne.Position, config FireworkCon
 
 	go func() {
 		defer func() { fl.animating = false }()
-
-		// 连续触发三次
-		for i := 0; i < 3; i++ {
-			// 每次生成前清理旧粒子
-			fl.cleanParticles()
-
-			// 根据次数修改配置
-			currentConfig := config
-			currentConfig.Color = generateStageColor(i)
-			currentConfig.SpeedBase += float64(i) * 0.5
-
-			// 生成粒子
-			particles := fl.createParticles(pos, currentConfig)
-			fl.activeParticles = particles
-
-			// 运行动画1秒
-			fl.runAnimation(1 * time.Second)
-
-			// 清理本次粒子
-			fl.cleanParticles()
-		}
+		// 每次生成前清理旧粒子
+		fl.cleanParticles()
+		// 生成粒子
+		fl.activeParticles = fl.createParticles(pos, config)
+		// 运行动画1秒
+		fl.runAnimation(1 * time.Second)
+		// 清理本次粒子
+		fl.cleanParticles()
 	}()
 }
 
@@ -85,7 +107,7 @@ func (fl *FireworkLauncher) createParticles(pos fyne.Position, config FireworkCo
 		speed := config.SpeedBase + rand.Float64()*2
 
 		p := &Particle{
-			circle:    canvas.NewCircle(config.Color),
+			circle:    canvas.NewCircle(randomColor()),
 			pos:       pos,
 			velocity:  fyne.NewPos(float32(math.Cos(angle))*float32(speed), float32(math.Sin(angle))*float32(-speed)),
 			startTime: time.Now(),
@@ -113,7 +135,7 @@ func (fl *FireworkLauncher) runAnimation(duration time.Duration) {
 		fyne.DoAndWait(func() {
 			delta := float64(time.Since(start)) / float64(time.Second)
 			fl.updateParticles(delta)
-			fl.container.Refresh()
+			fl.Refresh()
 		})
 	}
 }
@@ -141,20 +163,33 @@ func (fl *FireworkLauncher) cleanParticles() {
 			fl.container.Remove(p.circle)
 		}
 		fl.activeParticles = nil
-		fl.container.Refresh()
+		fl.Refresh()
 	})
 }
 
-// 生成不同阶段的颜色
-func generateStageColor(stage int) color.Color {
-	switch stage {
-	case 0:
-		return color.NRGBA{R: 255, G: 50, B: 0, A: 255} // 红色
-	case 1:
-		return color.NRGBA{R: 0, G: 200, B: 255, A: 255} // 蓝色
-	case 2:
-		return color.NRGBA{R: 255, G: 215, B: 0, A: 255} // 金色
-	default:
-		return color.White
+// 随机颜色
+func randomColor() color.Color {
+	// 红色到黄色的随机颜色
+	colorRandomArr := []color.Color{
+		color.NRGBA{
+			R: 255,
+			G: uint8(50 + rand.Intn(200)),
+			B: 0,
+			A: 255,
+		},
+		color.NRGBA{
+			R: uint8(50 + rand.Intn(200)),
+			G: 255,
+			B: 0,
+			A: 255,
+		},
+		color.NRGBA{
+			R: 255,
+			G: 255,
+			B: uint8(50 + rand.Intn(200)),
+			A: 255,
+		},
 	}
+
+	return colorRandomArr[rand.Intn(3)]
 }

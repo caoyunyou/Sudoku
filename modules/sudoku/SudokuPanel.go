@@ -48,8 +48,8 @@ func NewSudokuPanel() *SudokuPanel {
 	s.content = container.NewWithoutLayout(sudokuGrid, //边框占掉了一些距离 TODO 后面整一个弹性布局
 		s.hoverCircle)
 
-	dirework := ui.NewFireworkLauncher()
-	s.content = container.NewStack(s.content, dirework)
+	fireWorkGroup := ui.NewFireWorkGroup(3, 300)
+	s.content = container.NewStack(s.content, fireWorkGroup)
 
 	s.ExtendBaseWidget(s)
 
@@ -67,10 +67,7 @@ func NewSudokuPanel() *SudokuPanel {
 		go func() {
 			fyne.DoAndWait(func() {
 				// 中心点展示烟花特效
-				dirework.LaunchFirework(fyne.NewPos(s.content.Size().Width/2, s.content.Size().Height/2), ui.FireworkConfig{
-					ParticleCount: 50,
-					SpeedBase:     5.0,
-				})
+				fireWorkGroup.Start(fyne.NewPos(s.content.Size().Width/2, s.content.Size().Height/2))
 			})
 		}()
 	})
