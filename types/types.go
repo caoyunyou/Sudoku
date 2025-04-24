@@ -27,8 +27,16 @@ type SudokuInfo struct {
 	NumFillArr [10]int   // 数字填充数组
 }
 
+// GameDump 游戏快照信息，最后的游戏
+type GameDump struct {
+	X      int // 横坐标
+	Y      int // 纵坐标
+	OldVal int // 原来的值
+	NewVal int //现在的值
+}
+
 // StepInfo 步数信息
 type StepInfo struct {
 	Num  int
-	Info map[int]Game
+	Info map[int]*GameDump
 }

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"com.cyy/sudoku/event"
 	"com.cyy/sudoku/globel"
 	"com.cyy/sudoku/utils"
 	"fyne.io/fyne/v2"
@@ -47,11 +48,11 @@ func NewHoverEffect(
 
 	h.content = container.NewGridWrap(h.size, container.NewStack(container.NewGridWrap(h.size, h.circle), container.NewCenter(h.text)))
 	h.ExtendBaseWidget(h)
-	h.asyncListen()
+	h.eventSubscribe()
 	return h
 }
 
-// 创建渲染器
+// CreateRenderer 创建渲染器
 func (h *HoverEffectCircle) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(h.content)
 }
@@ -89,28 +90,17 @@ func (h *HoverEffectCircle) MouseOut() {
 	h.Refresh()
 }
 
-// 异步监听处理
-func (h *HoverEffectCircle) asyncListen() {
-	// 启动监听Goroutine
-	go func() {
-		for {
-			ob := globel.GetDataObservable(globel.SelectedNum)
-			current := ob.Get()
-			ob.Lock()
-			for ob.Value() == current {
-				ob.Wait()
-			}
-			go func() {
-				fyne.DoAndWait(func() {
-					h.text.Text = strconv.Itoa(ob.Value().(int))
-					h.text.Refresh()
-				})
-			}()
-			ob.UnLock()
-		}
-	}()
-}
-
 func (h *HoverEffectCircle) IsVisible() bool {
 	return h.visible
+}
+
+func (h *HoverEffectCircle) eventSubscribe() {
+	globel.EventBus().Subscribe(event.SelectedNumChange, func(event event.Event) {
+		selectedNum := event.Data.(int)
+		go func() {
+			fyne.DoAndWait(func() {
+				h.text.Text = strconv.Itoa(selectedNum)
+			})
+		}()
+	})
 }

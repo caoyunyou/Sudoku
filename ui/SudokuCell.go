@@ -18,9 +18,12 @@ type SudokuIdx struct {
 	groupIdx int // 窗格定位，哪个窗格里面
 	x        int // 窗格中的x坐标
 	y        int // 窗格中的y坐标
-	sudukuX  int // 对应数独数组的X坐标
+	sudokuX  int // 对应数独数组的X坐标
 	sudokuY  int // 对应数独数组的X坐标
 }
+
+var dTextColor = myTheme.SimpleTextColor()
+var sTextColor = utils.HTML2FyneRGB(0, 187, 0)
 
 // SudokuCell /*数独单元格*/
 type SudokuCell struct {
@@ -33,7 +36,8 @@ type SudokuCell struct {
 	size              fyne.Size         //大小
 	minSize           fyne.Size         //最小尺寸
 	data              SudokuIdx         // 对应数独的定位信息
-	uuid              string            //随机序列号
+	defaultTextColor  color.Color       // 默认的文字颜色
+	tappedTextColor   color.Color       //点击之后的文字颜色
 }
 
 func NewSudokuCell(diameter float32, // 直径
@@ -55,11 +59,13 @@ func NewSudokuCell(diameter float32, // 直径
 	// 设置文本样式
 	c.text.Alignment = fyne.TextAlignCenter
 	c.text.TextSize = textSize
-	//c.text.TextStyle.Bold = true
 	c.text.Color = textColor
+	// 颜色设置
+	c.defaultTextColor = textColor
+	c.tappedTextColor = sTextColor
 
 	// 对应数组坐标转换
-	c.data.sudukuX = 3*(data.groupIdx/3) + data.x
+	c.data.sudokuX = 3*(data.groupIdx/3) + data.x
 	c.data.sudokuY = (data.groupIdx%3)*3 + data.y
 	c.circle.FillColor = color.Transparent // 设置透明背景
 	// 抽出画图公共部分
@@ -87,21 +93,25 @@ func NewSudokuCell(diameter float32, // 直径
 	)
 
 	c.ExtendBaseWidget(c)
-	c.busMethod()
+	c.eventSubscribe()
 	return c
 }
 
 // 画图处理
 func (c *SudokuCell) drawHandle() {
 	// 获取数据信息
-	cell := globel.GetGameDataVal(c.data.sudukuX, c.data.sudokuY)
+
+	cell := globel.GetGameDataVal(c.data.sudokuX, c.data.sudokuY)
+	//log.Printf("drawHandle-->cell:%v,x:%d,y:%d", cell, c.data.sudokuX, c.data.sudokuY)
 	if cell.Num != 0 {
 		c.text.Text = strconv.Itoa(cell.Num)
 		// 是否是挖出来的孔
-		if cell.IsHole {
-			c.text.Text = strconv.Itoa(globel.GetDataStorage(globel.SelectedNum).(int))
-			c.text.Color = utils.HTML2FyneRGB(0, 187, 0)
+		if cell.IsHole { //选中的颜色
+			c.text.Color = c.tappedTextColor
 			c.text.TextStyle.Italic = true // 设置斜体
+		} else {
+			c.text.Color = c.defaultTextColor
+			c.text.TextStyle.Italic = false // 取消斜体
 		}
 	} else {
 		c.text.Text = ""
@@ -125,20 +135,20 @@ func (c *SudokuCell) Text() *canvas.Text {
 	return c.text
 }
 
-func (c *SudokuCell) busMethod() {
+func (c *SudokuCell) eventSubscribe() {
 	// 事件订阅:选择数字滚动
-	globel.EventBus().Subscribe(event.SelectNumScroll, func(event event.Event) {
-		selectedNum := event.Data.(int)
+	globel.EventBus().Subscribe(event.SelectedNumChange, func(event event.Event) {
 		go func() { // 异步执行渲染进程，防止出现问题
 			fyne.DoAndWait(func() {
-				num, _ := strconv.Atoi(c.Text().Text)
-				if selectedNum == num {
-					c.Circle().StrokeColor = utils.HTML2FyneRGB(238, 119, 80)
-					c.Circle().StrokeWidth = 2
-				} else {
-					c.Circle().StrokeWidth = 0
-				}
-				c.Circle().Refresh()
+				c.Refresh()
+			})
+		}()
+	})
+	//事件订阅::指定坐标回滚事件
+	globel.EventBus().Subscribe(event.GameUndoStep+strconv.Itoa(c.data.sudokuX)+strconv.Itoa(c.data.sudokuY), func(event event.Event) {
+		go func() { // 异步执行渲染进程，防止出现问题
+			fyne.DoAndWait(func() {
+				c.Refresh()
 			})
 		}()
 	})
@@ -162,7 +172,7 @@ func (c *SudokuCell) Tapped(*fyne.PointEvent) {
 	if c.onTapped != nil {
 		c.onTapped()
 	} else { // 设置点击处理事件
-		canChange := globel.ChangeGameDataVal(c.data.sudukuX, c.data.sudokuY, globel.GetDataStorage(globel.SelectedNum).(int))
+		canChange := globel.ChangeGameDataVal(c.data.sudokuX, c.data.sudokuY, globel.GetDataStorage(globel.SelectedNum).(int))
 		if canChange {
 			c.Refresh() //复用刷新
 		} else {

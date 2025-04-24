@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"log"
 )
 
 // ContainerGenerate 菜单容器生成
@@ -29,7 +28,6 @@ func ContainerGenerate() *fyne.Container {
 		}))
 
 	}
-	log.Println("length:", len(levelBtns))
 
 	menuContainer.Add(container.NewGridWrap(fyne.NewSize(200, 270), borderMenuGroupGenerate("新游戏", levelBtns, fyne.NewSize(200, 300), 20)))
 

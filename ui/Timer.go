@@ -73,7 +73,7 @@ func (t *TimerState) TimeStop() {
 }
 
 // 计时重置
-func (t *TimerState) TimeRestart() {
+func (t *TimerState) TimeReset() {
 	t.running = false
 	t.seconds = 0
 	if t.ticker != nil {

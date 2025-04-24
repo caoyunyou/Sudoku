@@ -44,24 +44,8 @@ func NewTappableNumber(num int, size fyne.Size, tapped func()) *TappableNumberCe
 
 	t.content = container.NewStack(container.NewGridWrap(size, t.circle), t.text)
 	t.ExtendBaseWidget(t)
-	// 事件发布，可抽出
-	globel.EventBus().Publish(event.Event{Type: event.SelectNumTap, Data: t})
-
 	// 事件订阅
-	globel.EventBus().Subscribe(event.NumberFillCompleted, func(event event.Event) {
-		if event.Data.(int) == num {
-			t.isFillCompleted = true
-			// 进行外观上的变更:透明度降低
-			t.selectedColor = color.RGBA{R: t.selectedColor.R, G: t.selectedColor.G, B: t.selectedColor.B, A: 180}
-			t.defaultColor = color.RGBA{R: t.defaultColor.R, G: t.defaultColor.G, B: t.defaultColor.B, A: 120}
-			//通过状态再次进行颜色转变
-			if t.isSelected {
-				t.ToSelectedStatus()
-			} else {
-				t.ToDefaultStatus()
-			}
-		}
-	})
+	t.eventSubscribe()
 	return t
 }
 
@@ -90,6 +74,11 @@ func (t *TappableNumberCell) Tapped(*fyne.PointEvent) {
 	}
 }
 
+func (t *TappableNumberCell) Refresh() {
+	t.BaseWidget.Refresh()
+	// 刷新处理
+}
+
 // ToDefaultStatus 转换成默认状态
 func (t *TappableNumberCell) ToDefaultStatus() {
 	t.circle.FillColor = t.defaultColor
@@ -100,4 +89,42 @@ func (t *TappableNumberCell) ToDefaultStatus() {
 func (t *TappableNumberCell) ToSelectedStatus() {
 	t.circle.FillColor = t.selectedColor
 	t.isSelected = true
+}
+
+// 事件订阅
+func (t *TappableNumberCell) eventSubscribe() {
+	// 事件订阅：数字填满
+	globel.EventBus().Subscribe(event.NumberFillCompleted, func(event event.Event) {
+		num, _ := strconv.Atoi(t.text.Text)
+		if event.Data.(int) == num {
+			go func() {
+				fyne.DoAndWait(func() {
+					t.isFillCompleted = true
+					// 进行外观上的变更:透明度降低
+					t.selectedColor = color.RGBA{R: t.selectedColor.R, G: t.selectedColor.G, B: t.selectedColor.B, A: 180}
+					t.defaultColor = color.RGBA{R: t.defaultColor.R, G: t.defaultColor.G, B: t.defaultColor.B, A: 120}
+					//通过状态再次进行颜色转变
+					if t.isSelected {
+						t.ToSelectedStatus()
+					} else {
+						t.ToDefaultStatus()
+					}
+				})
+			}()
+		}
+	})
+
+	// 事件订阅：选择数字变更事件
+	globel.EventBus().Subscribe(event.SelectedNumChange, func(event event.Event) {
+		num, _ := strconv.Atoi(t.text.Text)
+		go func() {
+			fyne.DoAndWait(func() {
+				if event.Data.(int) == num {
+					t.ToSelectedStatus()
+				} else {
+					t.ToDefaultStatus()
+				}
+			})
+		}()
+	})
 }

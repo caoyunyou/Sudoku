@@ -4,6 +4,7 @@ import (
 	"com.cyy/sudoku/event"
 	"com.cyy/sudoku/server"
 	"com.cyy/sudoku/types"
+	"strconv"
 )
 
 var sudoku _types.SudokuInfo
@@ -23,8 +24,7 @@ func CreateGameByLevel(level _types.LevelEnum) {
 	sudoku.LevelInfo = level
 	sudoku.CurrGame = server.GenerateSudokuPuzzle(sudoku.LevelInfo.InitSudokuNum)
 	// 步数信息留存
-	sudoku.Step = _types.StepInfo{Num: 0, Info: make(map[int]_types.Game)}
-	sudoku.Step.Info[0] = sudoku.CurrGame
+	sudoku.Step = _types.StepInfo{Num: 0, Info: make(map[int]*_types.GameDump)}
 
 	// 对局遍历，并获取其中每个数字的个数
 	for i := 0; i < 9; i++ {
@@ -45,19 +45,35 @@ func ChangeGameDataVal(i int, j int, newVal int) bool {
 	if sudoku.NumFillArr[newVal] == 9 {
 		return false
 	}
-	// 进行判断
-	isValid := server.IsValid(&sudoku.CurrGame, i, j, newVal)
+	// 设置为false
+	isValid := false
+	// 如果选择的数字和要填的数字一致，则直接取消该数字
+	if sudoku.CurrGame[i][j].Num == newVal {
+		newVal = 0
+		isValid = true
+	} else {
+		// 进行判断
+		isValid = server.IsValid(&sudoku.CurrGame, i, j, newVal)
+	}
 	if isValid {
+		oldVal := sudoku.CurrGame[i][j].Num
 		sudoku.CurrGame[i][j].Num = newVal //设值
 		sudoku.Step.Num++
-		sudoku.Step.Info[sudoku.Step.Num] = sudoku.CurrGame // 步数加一,历史记录留存
-		sudoku.NumFillArr[newVal]++                         //对应数字个数增加
-		if sudoku.NumFillArr[newVal] == 9 {                 //如果有9个数，则发布事件
+		//sudoku.Step.Info[sudoku.Step.Num] = sudoku.CurrGame // 步数加一,历史记录留存
+		sudoku.Step.Info[sudoku.Step.Num] = &_types.GameDump{
+			X:      i,
+			Y:      j,
+			OldVal: oldVal,
+			NewVal: newVal,
+		} // 步数加一,历史记录留存
+		sudoku.NumFillArr[newVal]++         //对应数字个数增加
+		if sudoku.NumFillArr[newVal] == 9 { //如果有9个数，则发布事件
 			eventBus.Publish(event.Event{Type: event.NumberFillCompleted, Data: newVal})
 		}
 	}
+
 	if 1 == sudoku.Step.Num { // 如果是走了第一步，则进行计时 TODO 考虑回滚操作
-		eventBus.Publish(event.Event{Type: event.TimeStart})
+		eventBus.Publish(event.Event{Type: event.TimeReStart})
 	}
 	// 如果步数和当前等级数之和为数独总个数，则游戏胜利，发布胜利事件
 	if 81 == sudoku.Step.Num+sudoku.LevelInfo.InitSudokuNum {
@@ -87,12 +103,20 @@ func EventBus() *event.Bus {
 
 // UndoStep 操作回滚
 func UndoStep() {
-	sudoku.CurrGame = sudoku.Step.Info[sudoku.Step.Num-1]
+	if sudoku.Step.Num == 0 { //初始盘不能撤销
+		return
+	}
+	// 当前步骤的信息
+	stepChange := sudoku.Step.Info[sudoku.Step.Num]
+	sudoku.CurrGame[stepChange.X][stepChange.Y].Num = stepChange.OldVal
+	//sudoku.CurrGame = sudoku.Step.Info[sudoku.Step.Num-1]
 	delete(sudoku.Step.Info, sudoku.Step.Num) // 清除对应的键值
 	sudoku.Step.Num--                         //步数减一
+	sudoku.NumFillArr[stepChange.OldVal]++    //对应数字进行增减
+	sudoku.NumFillArr[stepChange.NewVal]--    //对应数字进行增减
 
 	// 对局刷新
-	eventBus.Publish(event.Event{Type: event.GameRefresh})
+	eventBus.Publish(event.Event{Type: event.GameUndoStep + strconv.Itoa(stepChange.X) + strconv.Itoa(stepChange.Y)})
 }
 
 // GameRestart 游戏重新开始

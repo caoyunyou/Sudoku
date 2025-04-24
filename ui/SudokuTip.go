@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"log"
 )
 
 type SudokuTip struct {
@@ -22,7 +21,6 @@ func NewSudokuTip(size fyne.Size) *SudokuTip {
 
 	// 获取当前游戏等级
 	currentLevel := globel.GetGameLevel()
-	log.Println("level:", currentLevel)
 
 	levelContainer := container.NewHBox()
 	hardLevel := widget.NewLabel("难易度: ")
@@ -42,24 +40,8 @@ func NewSudokuTip(size fyne.Size) *SudokuTip {
 	infoContainer := container.NewCenter(container.NewHBox(levelContainer, timeContainer))
 	s.content = container.NewGridWrap(size, infoContainer)
 	s.ExtendBaseWidget(s)
-	// 订阅对应的等级变更事件
-	globel.EventBus().Subscribe(event.GameRefresh, func(event event.Event) {
-		go func() {
-			fyne.DoAndWait(func() {
-				s.Refresh()
-			})
-		}()
-	})
-
-	// 订阅时间开始事件
-	globel.EventBus().Subscribe(event.TimeStart, func(event event.Event) {
-		go func() {
-			fyne.DoAndWait(func() {
-				timeText.TimeStart()
-			})
-		}()
-	})
-
+	// 事件订阅
+	s.eventSubscribe()
 	return s
 }
 
@@ -74,4 +56,39 @@ func (s *SudokuTip) Refresh() {
 	// 更新对应的文本的颜色和文字信息
 	s.levelText.Text = currentLevel.LevelName
 	s.levelText.Color = currentLevel.LevelColor
+}
+
+// eventSubscribe 事件订阅
+func (s *SudokuTip) eventSubscribe() {
+	// 订阅对应的等级变更事件
+	globel.EventBus().Subscribe(event.GameRefresh, func(e event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				// 停止再重置计时
+				s.timeText.TimeStop()
+				s.timeText.TimeReset()
+				s.Refresh()
+			})
+		}()
+	})
+
+	// 订阅时间开始事件
+	globel.EventBus().Subscribe(event.TimeReStart, func(event event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				// 先重置再启动
+				s.timeText.TimeReset()
+				s.timeText.TimeStart()
+			})
+		}()
+	})
+
+	// 订阅时间终止事件
+	globel.EventBus().Subscribe(event.TimeStop, func(event event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				s.timeText.TimeStop()
+			})
+		}()
+	})
 }

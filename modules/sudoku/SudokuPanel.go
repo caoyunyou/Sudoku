@@ -17,11 +17,12 @@ var _ desktop.Hoverable = (*SudokuPanel)(nil)
 var _ desktop.Cursorable = (*SudokuPanel)(nil)
 var _ fyne.WidgetRenderer = (*panelRenderer)(nil)
 
-// SudokuContainer 创建sudoku实体，用于重写对应的事件
+// SudokuPanel 创建sudoku实体，用于重写对应的事件
 type SudokuPanel struct {
 	widget.BaseWidget
-	content     *fyne.Container //组合容器
-	hoverCircle *ui.HoverEffectCircle
+	content       *fyne.Container //组合容器
+	hoverCircle   *ui.HoverEffectCircle
+	fireWorkGroup *ui.FireWorkGroup // 烟花组
 }
 
 func NewSudokuPanel() *SudokuPanel {
@@ -49,89 +50,13 @@ func NewSudokuPanel() *SudokuPanel {
 		s.hoverCircle)
 
 	fireWorkGroup := ui.NewFireWorkGroup(3, 300)
+	s.fireWorkGroup = fireWorkGroup
 	s.content = container.NewStack(s.content, fireWorkGroup)
 
 	s.ExtendBaseWidget(s)
-
-	// 事件订阅 游戏等级变更
-	globel.EventBus().Subscribe(event.GameRefresh, func(event event.Event) {
-		go func() {
-			fyne.DoAndWait(func() {
-				s.Refresh()
-			})
-		}()
-	})
-	//事件订阅：游戏胜利展示小特效
-	// TODO 优化展示，
-	globel.EventBus().Subscribe(event.GameVictory, func(event event.Event) {
-		go func() {
-			fyne.DoAndWait(func() {
-				// 中心点展示烟花特效
-				fireWorkGroup.Start(fyne.NewPos(s.content.Size().Width/2, s.content.Size().Height/2))
-			})
-		}()
-	})
+	s.eventSubscribe()
 
 	return s
-}
-
-// 事件订阅
-func eventSubscribe() {
-	// 事件订阅
-	globel.EventBus().Subscribe(event.SelectNumScroll, func(event event.Event) {
-		if nil != event.Data {
-			cell := event.Data.(*ui.SudokuCell)
-			for {
-				ob := globel.GetDataObservable(globel.SelectedNum)
-				current := ob.Get()
-				ob.Lock()
-				for ob.Value() == current {
-					ob.Wait()
-				}
-				go func() {
-					fyne.DoAndWait(func() {
-						num, _ := strconv.Atoi(cell.Text().Text)
-						if ob.Value() == num {
-							cell.Circle().StrokeColor = utils.HTML2FyneRGB(238, 119, 80)
-							cell.Circle().StrokeWidth = 1
-						} else {
-							cell.Circle().StrokeWidth = 0
-						}
-						cell.Circle().Refresh()
-					})
-				}()
-				ob.UnLock()
-			}
-		}
-	})
-}
-
-func scrollEvent() {
-	// 事件订阅
-	globel.EventBus().Subscribe(event.SelectNumScroll, func(event event.Event) {
-		if nil != event.Data {
-			cell := event.Data.(*ui.SudokuCell)
-			ob := globel.GetDataObservable(globel.SelectedNum)
-			current := ob.Get()
-			ob.Lock()
-			for ob.Value() == current {
-				ob.Wait()
-			}
-			go func() {
-				fyne.DoAndWait(func() {
-					num, _ := strconv.Atoi(cell.Text().Text)
-					if ob.Value() == num {
-						cell.Circle().StrokeColor = utils.HTML2FyneRGB(238, 119, 80)
-						cell.Circle().StrokeWidth = 1
-					} else {
-						cell.Circle().StrokeWidth = 0
-					}
-					cell.Circle().Refresh()
-				})
-			}()
-			ob.UnLock()
-		}
-	})
 }
 
 // 自定义渲染器
@@ -158,14 +83,14 @@ func (s *SudokuPanel) Scrolled(e *fyne.ScrollEvent) {
 			globel.SetDataStorage(globel.SelectedNum, globel.GetDataStorage(globel.SelectedNum).(int)-1)
 		}
 		//强制刷新一次
-		globel.EventBus().Publish(event.Event{Type: event.SelectNumScroll, Data: globel.GetDataStorage(globel.SelectedNum).(int)})
+		globel.EventBus().Publish(event.Event{Type: event.SelectedNumChange, Data: globel.GetDataStorage(globel.SelectedNum).(int)})
 	} else if e.Scrolled.DY < 0 {
 		if globel.GetDataStorage(globel.SelectedNum).(int) == 9 {
 			globel.SetDataStorage(globel.SelectedNum, 1)
 		} else {
 			globel.SetDataStorage(globel.SelectedNum, globel.GetDataStorage(globel.SelectedNum).(int)+1)
 		}
-		globel.EventBus().Publish(event.Event{Type: event.SelectNumScroll, Data: globel.GetDataStorage(globel.SelectedNum).(int)})
+		globel.EventBus().Publish(event.Event{Type: event.SelectedNumChange, Data: globel.GetDataStorage(globel.SelectedNum).(int)})
 	}
 }
 
@@ -192,4 +117,29 @@ func (s *SudokuPanel) Cursor() desktop.Cursor {
 
 func (s *SudokuPanel) Refresh() {
 	s.BaseWidget.Refresh()
+}
+
+// 事件订阅
+func (s *SudokuPanel) eventSubscribe() {
+	// 事件订阅 游戏等级变更
+	globel.EventBus().Subscribe(event.GameRefresh, func(event event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				s.Refresh()
+			})
+		}()
+	})
+
+	//事件订阅：游戏胜利展示小特效
+	// TODO 优化展示，
+	globel.EventBus().Subscribe(event.GameVictory, func(e event.Event) {
+		// 发布事件：终止时间
+		globel.EventBus().Publish(event.Event{Type: event.TimeStop})
+		go func() {
+			fyne.DoAndWait(func() {
+				// 中心点展示烟花特效
+				s.fireWorkGroup.Start(fyne.NewPos(s.content.Size().Width/2, s.content.Size().Height/2))
+			})
+		}()
+	})
 }
