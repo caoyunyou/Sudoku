@@ -5,7 +5,6 @@ import (
 	"com.cyy/sudoku/globel"
 	myTheme "com.cyy/sudoku/theme"
 	"com.cyy/sudoku/utils"
-	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -88,38 +87,28 @@ func NewSudokuCell(diameter float32, // 直径
 	)
 
 	c.ExtendBaseWidget(c)
-
-	// 事件订阅:选择数字滚动
-	globel.EventBus().Subscribe(event.SelectNumScroll, func(event event.Event) {
-		selectedNum := event.Data.(int)
-		go func() { // 异步执行渲染进程，防止出现问题
-			fyne.DoAndWait(func() {
-				num, _ := strconv.Atoi(c.Text().Text)
-				if selectedNum == num {
-					c.Circle().StrokeColor = utils.HTML2FyneRGB(238, 119, 80)
-					c.Circle().StrokeWidth = 2
-				} else {
-					c.Circle().StrokeWidth = 0
-				}
-				c.Circle().Refresh()
-			})
-		}()
-	})
+	c.busMethod()
 	return c
 }
 
 // 画图处理
 func (c *SudokuCell) drawHandle() {
 	// 获取数据信息
-	number := globel.GetGameDataVal(c.data.sudukuX, c.data.sudokuY)
-	if number != 0 {
-		c.text.Text = strconv.Itoa(number)
+	cell := globel.GetGameDataVal(c.data.sudukuX, c.data.sudokuY)
+	if cell.Num != 0 {
+		c.text.Text = strconv.Itoa(cell.Num)
+		// 是否是挖出来的孔
+		if cell.IsHole {
+			c.text.Text = strconv.Itoa(globel.GetDataStorage(globel.SelectedNum).(int))
+			c.text.Color = utils.HTML2FyneRGB(0, 187, 0)
+			c.text.TextStyle.Italic = true // 设置斜体
+		}
 	} else {
 		c.text.Text = ""
 	}
 
 	// 如果选中了对应数字，才进行边框设定
-	if globel.GetDataStorage(globel.SelectedNum) == number {
+	if globel.GetDataStorage(globel.SelectedNum) == cell.Num {
 		c.circle.StrokeColor = utils.HTML2FyneRGB(238, 119, 80)
 		c.circle.StrokeWidth = 2
 	} else {
@@ -136,29 +125,23 @@ func (c *SudokuCell) Text() *canvas.Text {
 	return c.text
 }
 
-func busMethod(c *SudokuCell) {
-	for {
-		ob := globel.GetDataObservable(globel.SelectedNum)
-		current := ob.Get()
-		ob.Lock()
-		for ob.Value() == current {
-			ob.Wait()
-		}
-		go func() {
+func (c *SudokuCell) busMethod() {
+	// 事件订阅:选择数字滚动
+	globel.EventBus().Subscribe(event.SelectNumScroll, func(event event.Event) {
+		selectedNum := event.Data.(int)
+		go func() { // 异步执行渲染进程，防止出现问题
 			fyne.DoAndWait(func() {
-				num, _ := strconv.Atoi(c.text.Text)
-				if ob.Value() == num {
-					c.circle.StrokeColor = utils.HTML2FyneRGB(238, 119, 80)
-					c.circle.StrokeWidth = 2
+				num, _ := strconv.Atoi(c.Text().Text)
+				if selectedNum == num {
+					c.Circle().StrokeColor = utils.HTML2FyneRGB(238, 119, 80)
+					c.Circle().StrokeWidth = 2
 				} else {
-					c.circle.StrokeWidth = 0
+					c.Circle().StrokeWidth = 0
 				}
-				c.circle.Refresh()
+				c.Circle().Refresh()
 			})
 		}()
-		ob.UnLock()
-		fmt.Println("busMethod -> 监听到变化，新值:", ob.Value())
-	}
+	})
 }
 
 // CreateRenderer 创建渲染器
@@ -181,13 +164,7 @@ func (c *SudokuCell) Tapped(*fyne.PointEvent) {
 	} else { // 设置点击处理事件
 		canChange := globel.ChangeGameDataVal(c.data.sudukuX, c.data.sudokuY, globel.GetDataStorage(globel.SelectedNum).(int))
 		if canChange {
-			c.circle.StrokeColor = utils.HTML2FyneRGB(238, 119, 80)
-			c.circle.StrokeWidth = 2
-			c.text.Text = strconv.Itoa(globel.GetDataStorage(globel.SelectedNum).(int))
-			c.text.Color = utils.HTML2FyneRGB(0, 187, 0)
-			c.text.TextStyle.Italic = true // 设置斜体
-			c.text.Refresh()
-			c.circle.Refresh()
+			c.Refresh() //复用刷新
 		} else {
 			//TODO 看看是不是要弹出警告啥的
 		}

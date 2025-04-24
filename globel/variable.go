@@ -3,23 +3,11 @@ package globel
 import (
 	"com.cyy/sudoku/event"
 	"com.cyy/sudoku/server"
+	"com.cyy/sudoku/types"
 )
 
-type sudokuInfo struct {
-	origGame   [9][9]int // 初始对局，用作检测，其中填充数字无法进行更改
-	game       [9][9]int // 对局信息
-	levelInfo  LevelEnum // 等级信息
-	step       stepInfo  // 当前步数
-	numFillArr [10]int   // 数字填充数组
-}
-
-var sudoku sudokuInfo
-
-// 步数信息
-type stepInfo struct {
-	num  int
-	info map[int][9][9]int
-}
+var sudoku _types.SudokuInfo
+var saveSudoku _types.SudokuInfo
 
 // 全局维护一个事件总线
 var eventBus *event.Bus
@@ -31,18 +19,17 @@ func init() {
 }
 
 // CreateGameByLevel 通过等级进行对应数独游戏的创建
-func CreateGameByLevel(level LevelEnum) {
-	sudoku.levelInfo = level
-	sudoku.origGame = server.GenerateSudokuPuzzle(sudoku.levelInfo.InitSudokuNum)
-	sudoku.game = sudoku.origGame
+func CreateGameByLevel(level _types.LevelEnum) {
+	sudoku.LevelInfo = level
+	sudoku.CurrGame = server.GenerateSudokuPuzzle(sudoku.LevelInfo.InitSudokuNum)
 	// 步数信息留存
-	sudoku.step = stepInfo{num: 0, info: make(map[int][9][9]int)}
-	sudoku.step.info[0] = sudoku.game
+	sudoku.Step = _types.StepInfo{Num: 0, Info: make(map[int]_types.Game)}
+	sudoku.Step.Info[0] = sudoku.CurrGame
 
 	// 对局遍历，并获取其中每个数字的个数
 	for i := 0; i < 9; i++ {
 		for j := 0; j < 9; j++ {
-			sudoku.numFillArr[sudoku.game[i][j]]++
+			sudoku.NumFillArr[sudoku.CurrGame[i][j].Num]++
 		}
 	}
 
@@ -51,46 +38,46 @@ func CreateGameByLevel(level LevelEnum) {
 // ChangeGameDataVal 数独单元格点击
 func ChangeGameDataVal(i int, j int, newVal int) bool {
 	// 判断对应单元格是否为初始化对局的单元格
-	if sudoku.origGame[i][j] != 0 {
+	if !sudoku.CurrGame[i][j].IsHole {
 		return false
 	}
 	// 如果对应的数字已满足9个，则不允许再次填入
-	if sudoku.numFillArr[newVal] == 9 {
+	if sudoku.NumFillArr[newVal] == 9 {
 		return false
 	}
 	// 进行判断
-	isValid := server.IsValid((*server.Sudoku)(&sudoku.game), i, j, newVal)
+	isValid := server.IsValid(&sudoku.CurrGame, i, j, newVal)
 	if isValid {
-		sudoku.game[i][j] = newVal //设值
-		sudoku.step.num++
-		sudoku.step.info[sudoku.step.num] = sudoku.game // 步数加一,历史记录留存
-		sudoku.numFillArr[newVal]++                     //对应数字个数增加
-		if sudoku.numFillArr[newVal] == 9 {             //如果有9个数，则发布事件
+		sudoku.CurrGame[i][j].Num = newVal //设值
+		sudoku.Step.Num++
+		sudoku.Step.Info[sudoku.Step.Num] = sudoku.CurrGame // 步数加一,历史记录留存
+		sudoku.NumFillArr[newVal]++                         //对应数字个数增加
+		if sudoku.NumFillArr[newVal] == 9 {                 //如果有9个数，则发布事件
 			eventBus.Publish(event.Event{Type: event.NumberFillCompleted, Data: newVal})
 		}
 	}
-	if 1 == sudoku.step.num { // 如果是走了第一步，则进行计时 TODO 考虑回滚操作
+	if 1 == sudoku.Step.Num { // 如果是走了第一步，则进行计时 TODO 考虑回滚操作
 		eventBus.Publish(event.Event{Type: event.TimeStart})
 	}
 	// 如果步数和当前等级数之和为数独总个数，则游戏胜利，发布胜利事件
-	if 81 == sudoku.step.num+sudoku.levelInfo.InitSudokuNum {
+	if 81 == sudoku.Step.Num+sudoku.LevelInfo.InitSudokuNum {
 		eventBus.Publish(event.Event{Type: event.GameVictory})
 	}
 	return isValid
 }
 
 // GetGameData 获取当前游戏数据
-func GetGameData() [9][9]int {
-	return sudoku.game
+func GetGameData() _types.Game {
+	return sudoku.CurrGame
 }
 
 // GetGameLevel 获取当前等级信息
-func GetGameLevel() LevelEnum {
-	return sudoku.levelInfo
+func GetGameLevel() _types.LevelEnum {
+	return sudoku.LevelInfo
 }
 
-func GetGameDataVal(i int, j int) int {
-	return sudoku.game[i][j]
+func GetGameDataVal(i int, j int) _types.GameCell {
+	return sudoku.CurrGame[i][j]
 }
 
 // EventBus 获取事件总线
@@ -100,10 +87,28 @@ func EventBus() *event.Bus {
 
 // UndoStep 操作回滚
 func UndoStep() {
-	sudoku.game = sudoku.step.info[sudoku.step.num-1]
-	delete(sudoku.step.info, sudoku.step.num) // 清除对应的键值
-	sudoku.step.num--                         //步数减一
+	sudoku.CurrGame = sudoku.Step.Info[sudoku.Step.Num-1]
+	delete(sudoku.Step.Info, sudoku.Step.Num) // 清除对应的键值
+	sudoku.Step.Num--                         //步数减一
 
 	// 对局刷新
+	eventBus.Publish(event.Event{Type: event.GameRefresh})
+}
+
+// GameRestart 游戏重新开始
+func GameRestart() {
+	CreateGameByLevel(sudoku.LevelInfo)
+	// 发送事件
+	eventBus.Publish(event.Event{Type: event.GameRefresh})
+}
+
+// GameSave 存盘
+func GameSave() {
+	saveSudoku = sudoku
+}
+
+// GameReStore 恢复存盘至当前对局
+func GameReStore() {
+	sudoku = saveSudoku
 	eventBus.Publish(event.Event{Type: event.GameRefresh})
 }

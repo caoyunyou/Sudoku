@@ -14,7 +14,7 @@ package test
 //)
 //
 //// 1. 创建自定义光标组件
-//type CustomCursor struct {
+//types CustomCursor struct {
 //	widget.BaseWidget
 //	circle  *canvas.Circle
 //	text    *canvas.Text
@@ -51,7 +51,7 @@ package test
 //}
 //
 //// 2. 创建可交互父容器
-//type CursorContainer struct {
+//types CursorContainer struct {
 //	widget.BaseWidget
 //	content     *fyne.Container
 //	cursor      *CustomCursor

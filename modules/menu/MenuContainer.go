@@ -39,10 +39,18 @@ func ContainerGenerate() *fyne.Container {
 		{Text: "撤销", OnTapped: func() {
 			globel.UndoStep()
 		}},
-		{Text: "重新开始", OnTapped: nil},
-		{Text: "打印", OnTapped: nil},
-		{Text: "保存", OnTapped: nil},
-		{Text: "恢复", OnTapped: nil},
+		{Text: "重新开始", OnTapped: func() {
+			globel.GameRestart()
+		}},
+		{Text: "打印", OnTapped: func() {
+			//TODO 这个不太好整
+		}},
+		{Text: "保存", OnTapped: func() {
+			globel.GameSave()
+		}},
+		{Text: "恢复", OnTapped: func() {
+			globel.GameReStore()
+		}},
 	}
 
 	menuContainer.Add(container.NewGridWrap(fyne.NewSize(200, 270), borderMenuGroupGenerate("", handleBtns, fyne.NewSize(200, 300), 20)))
