@@ -43,7 +43,7 @@ func NewSudokuTip(size fyne.Size) *SudokuTip {
 	s.content = container.NewGridWrap(size, infoContainer)
 	s.ExtendBaseWidget(s)
 	// 订阅对应的等级变更事件
-	globel.EventBus().Subscribe(event.GameLevelChange, func(event event.Event) {
+	globel.EventBus().Subscribe(event.GameRefresh, func(event event.Event) {
 		go func() {
 			fyne.DoAndWait(func() {
 				s.Refresh()

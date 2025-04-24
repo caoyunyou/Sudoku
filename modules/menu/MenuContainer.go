@@ -25,8 +25,7 @@ func ContainerGenerate() *fyne.Container {
 			//点击后触发
 			globel.CreateGameByLevel(enum)
 			// 发送事件
-			globel.EventBus().Publish(event.Event{Type: event.GameLevelChange})
-			//globel.EventBus().Publish(event.Event{Type: event.GameVictory})
+			globel.EventBus().Publish(event.Event{Type: event.GameRefresh})
 		}))
 
 	}
@@ -37,11 +36,13 @@ func ContainerGenerate() *fyne.Container {
 	// 创建新容器
 
 	handleBtns := []*widget.Button{
-		{Text: "撤销", OnTapped: nil},
+		{Text: "撤销", OnTapped: func() {
+			globel.UndoStep()
+		}},
 		{Text: "重新开始", OnTapped: nil},
 		{Text: "打印", OnTapped: nil},
 		{Text: "保存", OnTapped: nil},
-		{Text: "回滚", OnTapped: nil},
+		{Text: "恢复", OnTapped: nil},
 	}
 
 	menuContainer.Add(container.NewGridWrap(fyne.NewSize(200, 270), borderMenuGroupGenerate("", handleBtns, fyne.NewSize(200, 300), 20)))

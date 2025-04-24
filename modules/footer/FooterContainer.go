@@ -4,7 +4,6 @@ import (
 	"com.cyy/sudoku/event"
 	"com.cyy/sudoku/globel"
 	"com.cyy/sudoku/ui"
-	"com.cyy/sudoku/utils"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
@@ -18,19 +17,17 @@ func ContainerGenerate() *fyne.Container {
 
 	// 底部数字按钮
 	numButtons := container.New(layout.NewHBoxLayout())
-	defaultColor := utils.HTML2FyneRGB(26, 56, 226)
-	selectedColor := utils.HTML2FyneRGB(225, 137, 92)
 	for i := 1; i <= 9; i++ {
 		num := i
 		var tc *ui.TappableNumberCell
-		tc = ui.NewTappableNumber(defaultColor, num, fyne.NewSize(55, 55), func() {
-			selected := globel.GetDataStorage("SelectedNumberCell")
+		tc = ui.NewTappableNumber(num, fyne.NewSize(55, 55), func() {
+			selected := globel.GetDataStorage(globel.SelectedNumberCell)
 			if selected != nil { // 清除之前按钮的颜色
-				selected.(*ui.TappableNumberCell).SetFillColor(defaultColor)
+				selected.(*ui.TappableNumberCell).ToDefaultStatus()
 			}
 			selected = tc
-			globel.SetDataStorage("SelectedNumberCell", tc)
-			selected.(*ui.TappableNumberCell).SetFillColor(selectedColor)
+			globel.SetDataStorage(globel.SelectedNumberCell, tc)
+			selected.(*ui.TappableNumberCell).ToSelectedStatus()
 			globel.SetDataStorage(globel.SelectedNum, num)
 		})
 		numButtons.Add(tc)
@@ -55,9 +52,9 @@ func eventSubscribe() {
 				fyne.DoAndWait(func() {
 					num, _ := strconv.Atoi(t.Text().Text)
 					if ob.Value() == num {
-						t.SetFillColor(utils.HTML2FyneRGB(225, 137, 92))
+						t.ToSelectedStatus()
 					} else {
-						t.SetFillColor(utils.HTML2FyneRGB(26, 56, 226))
+						t.ToDefaultStatus()
 					}
 					t.Circle().Refresh()
 				})

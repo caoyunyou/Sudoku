@@ -3,7 +3,8 @@ package globel
 import "com.cyy/sudoku/utils"
 
 const (
-	SelectedNum = "SelectedNum"
+	SelectedNum        = "SelectedNum"
+	SelectedNumberCell = "SelectedNumberCell"
 )
 
 // 等级枚举设置

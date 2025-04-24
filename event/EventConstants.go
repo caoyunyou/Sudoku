@@ -11,12 +11,18 @@ const (
 	GameStart = "game::start"
 	// GameVictory 游戏胜利
 	GameVictory = "game::victory"
-	// GameLevelChange 游戏难度变更
-	GameLevelChange = "game::levelChange"
+	// GameRefresh 对局刷新
+	GameRefresh = "game::refresh"
 	// TimeStart 计时开式
 	TimeStart = "time::start"
 	// TimeStop 计时终止
 	TimeStop = "time::stop"
 	// TimeReStart 计时重置
 	TimeReStart = "time::restart"
+	// NumberFillCompleted 数字填充完成
+	NumberFillCompleted = "number::fillCompleted"
+	// CandidatesView 查看数独对应的候选数字信息
+	CandidatesView = "candidates::view"
+	// CandidatesHide 候选数字隐藏
+	CandidatesHide = "candidates::hide"
 )

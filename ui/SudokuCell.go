@@ -89,7 +89,7 @@ func NewSudokuCell(diameter float32, // 直径
 
 	c.ExtendBaseWidget(c)
 
-	// 事件订阅
+	// 事件订阅:选择数字滚动
 	globel.EventBus().Subscribe(event.SelectNumScroll, func(event event.Event) {
 		selectedNum := event.Data.(int)
 		go func() { // 异步执行渲染进程，防止出现问题

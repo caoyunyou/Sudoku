@@ -54,7 +54,7 @@ func NewSudokuPanel() *SudokuPanel {
 	s.ExtendBaseWidget(s)
 
 	// 事件订阅 游戏等级变更
-	globel.EventBus().Subscribe(event.GameLevelChange, func(event event.Event) {
+	globel.EventBus().Subscribe(event.GameRefresh, func(event event.Event) {
 		go func() {
 			fyne.DoAndWait(func() {
 				s.Refresh()
