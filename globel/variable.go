@@ -7,8 +7,8 @@ import (
 	"strconv"
 )
 
-var sudoku _types.SudokuInfo
-var saveSudoku _types.SudokuInfo
+var sudoku *_types.SudokuInfo
+var saveSudoku *_types.SudokuInfo
 
 // 全局维护一个事件总线
 var eventBus *event.Bus
@@ -21,6 +21,9 @@ func init() {
 
 // CreateGameByLevel 通过等级进行对应数独游戏的创建
 func CreateGameByLevel(level _types.LevelEnum) {
+	if sudoku == nil {
+		sudoku = &_types.SudokuInfo{}
+	}
 	sudoku.LevelInfo = level
 	sudoku.CurrGame = server.GenerateSudokuPuzzle(sudoku.LevelInfo.InitSudokuNum)
 	// 步数信息留存
@@ -128,11 +131,18 @@ func GameRestart() {
 
 // GameSave 存盘
 func GameSave() {
-	saveSudoku = sudoku
+	if saveSudoku == nil {
+		saveSudoku = &_types.SudokuInfo{}
+	}
+	*saveSudoku = *sudoku
+
 }
 
 // GameReStore 恢复存盘至当前对局
 func GameReStore() {
-	sudoku = saveSudoku
+	if saveSudoku == nil {
+		return
+	}
+	*sudoku = *saveSudoku
 	eventBus.Publish(event.Event{Type: event.GameRefresh})
 }
