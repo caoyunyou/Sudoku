@@ -7,11 +7,17 @@ import (
 	"strconv"
 )
 
-var sudoku *_types.SudokuInfo
-var saveSudoku *_types.SudokuInfo
+// 接口声明
+var (
+	sudoku     *_types.SudokuInfo
+	saveSudoku *_types.SudokuInfo
+)
 
-// 全局维护一个事件总线
-var eventBus *event.Bus
+// 变量声明
+var (
+	// 全局维护一个事件总线
+	eventBus *event.Bus
+)
 
 // 初始化处理
 func init() {

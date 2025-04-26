@@ -13,7 +13,9 @@ import (
 	"strconv"
 )
 
-var _ desktop.Hoverable = (*HoverEffectCircle)(nil)
+var (
+	_ desktop.Hoverable = (*HoverEffectCircle)(nil)
+)
 
 // HoverEffectCircle 自定义悬浮效果组件
 type HoverEffectCircle struct {

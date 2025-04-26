@@ -13,9 +13,11 @@ import (
 	"strconv"
 )
 
-var _ desktop.Hoverable = (*SudokuPanel)(nil)
-var _ desktop.Cursorable = (*SudokuPanel)(nil)
-var _ fyne.WidgetRenderer = (*panelRenderer)(nil)
+var (
+	_ desktop.Hoverable   = (*SudokuPanel)(nil)
+	_ desktop.Cursorable  = (*SudokuPanel)(nil)
+	_ fyne.WidgetRenderer = (*panelRenderer)(nil)
+)
 
 // SudokuPanel 创建sudoku实体，用于重写对应的事件
 type SudokuPanel struct {

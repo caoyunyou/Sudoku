@@ -7,7 +7,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-var _ fyne.WidgetRenderer = (*sudokuContainerRenderer)(nil)
+var (
+	_ fyne.WidgetRenderer = (*sudokuContainerRenderer)(nil)
+)
 
 // SudokuContainer 创建sudoku实体，用于重写对应的事件
 type SudokuContainer struct {

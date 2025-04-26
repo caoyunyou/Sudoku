@@ -36,7 +36,9 @@ type handlerEntry struct {
 	id      int64 // 唯一标识符
 }
 
-var nextID int64 // 自增 ID 生成器
+var (
+	nextID int64 // 自增 ID 生成器
+)
 
 // Subscribe 事件订阅:返回取消函数
 func (eb *Bus) Subscribe(eventType string, handler Handler) func() {

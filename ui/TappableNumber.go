@@ -12,8 +12,17 @@ import (
 	"strconv"
 )
 
-var dColor = utils.HTML2FyneRGB(26, 56, 226)
-var sColor = utils.HTML2FyneRGB(225, 137, 92)
+// 接口实现
+var (
+	_ fyne.Tappable = (*TappableNumberCell)(nil)
+	_ fyne.Widget   = (*TappableNumberCell)(nil)
+)
+
+// 变量声明
+var (
+	dColor = utils.HTML2FyneRGB(26, 56, 226)
+	sColor = utils.HTML2FyneRGB(225, 137, 92)
+)
 
 // TappableNumberCell 实现可点击的圆形数字容器
 type TappableNumberCell struct {

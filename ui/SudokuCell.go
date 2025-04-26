@@ -22,8 +22,16 @@ type SudokuIdx struct {
 	sudokuY  int // 对应数独数组的X坐标
 }
 
-var dTextColor = myTheme.SimpleTextColor()
-var sTextColor = utils.HTML2FyneRGB(0, 187, 0)
+// 接口声明
+var (
+	_ fyne.Tappable = (*SudokuCell)(nil)
+	_ fyne.Widget   = (*SudokuCell)(nil)
+)
+
+var (
+	dTextColor = myTheme.SimpleTextColor()
+	sTextColor = utils.HTML2FyneRGB(0, 187, 0)
+)
 
 // SudokuCell /*数独单元格*/
 type SudokuCell struct {

@@ -13,7 +13,7 @@ import (
 
 func main() {
 	setupDesktop()
-	//test.FireWork()
+	//_test.SelfHoverTest()
 }
 
 // setupDesktop 程序启动

@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
-// DataMap 数据仓库
-var DataMap map[string]*utils.Observable
+var (
+	// DataMap 数据仓库
+	DataMap map[string]*utils.Observable
+)
 
 func init() {
 	DataMap = make(map[string]*utils.Observable)
