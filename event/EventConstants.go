@@ -17,6 +17,8 @@ const (
 	TimeReStart = "time::restart"
 	// NumberFillCompleted 数字填充完成
 	NumberFillCompleted = "number::fillCompleted"
+	// NumberFillRollback 数字填充回退
+	NumberFillRollback = "number::fillRollback"
 	// CandidatesView 查看数独对应的候选数字信息
 	CandidatesView = "candidates::view"
 	// CandidatesHide 候选数字隐藏

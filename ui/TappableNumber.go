@@ -27,14 +27,13 @@ var (
 // TappableNumberCell 实现可点击的圆形数字容器
 type TappableNumberCell struct {
 	widget.BaseWidget
-	content         *fyne.Container //组合容器
-	circle          *canvas.Circle  //圆形轮廓
-	text            *canvas.Text    // 显示文本
-	onTapped        func()          //点击事件
-	isFillCompleted bool            //是否填充完毕
-	defaultColor    color.RGBA      // 默认颜色
-	selectedColor   color.RGBA      //选中颜色
-	isSelected      bool            // 是否选中
+	content       *fyne.Container //组合容器
+	circle        *canvas.Circle  //圆形轮廓
+	text          *canvas.Text    // 显示文本
+	onTapped      func()          //点击事件
+	defaultColor  color.RGBA      // 默认颜色
+	selectedColor color.RGBA      //选中颜色
+	isSelected    bool            // 是否选中
 }
 
 func NewTappableNumber(num int, size fyne.Size, tapped func()) *TappableNumberCell {
@@ -52,6 +51,7 @@ func NewTappableNumber(num int, size fyne.Size, tapped func()) *TappableNumberCe
 	t.isSelected = false
 
 	t.content = container.NewStack(container.NewGridWrap(size, t.circle), t.text)
+	t.drawHandle() //画图公共部分
 	t.ExtendBaseWidget(t)
 	// 事件订阅
 	t.eventSubscribe()
@@ -68,12 +68,12 @@ func (t *TappableNumberCell) Text() *canvas.Text {
 
 // CreateRenderer 创建图形渲染
 func (t *TappableNumberCell) CreateRenderer() fyne.WidgetRenderer {
-	num, _ := strconv.Atoi(t.text.Text)
-	if globel.GetDataStorage(globel.SelectedNum) == num {
-		t.ToSelectedStatus()
-	} else {
-		t.ToDefaultStatus()
-	}
+	//num, _ := strconv.Atoi(t.text.Text)
+	//if globel.GetDataStorage(globel.SelectedNum) == num {
+	//	t.ToSelectedStatus()
+	//} else {
+	//	t.ToDefaultStatus()
+	//}
 	return widget.NewSimpleRenderer(t.content)
 }
 
@@ -86,6 +86,7 @@ func (t *TappableNumberCell) Tapped(*fyne.PointEvent) {
 func (t *TappableNumberCell) Refresh() {
 	t.BaseWidget.Refresh()
 	// 刷新处理
+	t.drawHandle()
 }
 
 // ToDefaultStatus 转换成默认状态
@@ -103,24 +104,36 @@ func (t *TappableNumberCell) ToSelectedStatus() {
 // 事件订阅
 func (t *TappableNumberCell) eventSubscribe() {
 	// 事件订阅：数字填满
-	globel.EventBus().Subscribe(event.NumberFillCompleted, func(event event.Event) {
-		num, _ := strconv.Atoi(t.text.Text)
-		if event.Data.(int) == num {
-			go func() {
-				fyne.DoAndWait(func() {
-					t.isFillCompleted = true
-					// 进行外观上的变更:透明度降低
-					t.selectedColor = color.RGBA{R: t.selectedColor.R, G: t.selectedColor.G, B: t.selectedColor.B, A: 180}
-					t.defaultColor = color.RGBA{R: t.defaultColor.R, G: t.defaultColor.G, B: t.defaultColor.B, A: 120}
-					//通过状态再次进行颜色转变
-					if t.isSelected {
-						t.ToSelectedStatus()
-					} else {
-						t.ToDefaultStatus()
-					}
-				})
-			}()
-		}
+	globel.EventBus().Subscribe(event.NumberFillCompleted+t.text.Text, func(event event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				// 进行外观上的变更:透明度降低
+				t.selectedColor = color.RGBA{R: t.selectedColor.R, G: t.selectedColor.G, B: t.selectedColor.B, A: 180}
+				t.defaultColor = color.RGBA{R: t.defaultColor.R, G: t.defaultColor.G, B: t.defaultColor.B, A: 120}
+				//通过状态再次进行颜色转变
+				if t.isSelected {
+					t.ToSelectedStatus()
+				} else {
+					t.ToDefaultStatus()
+				}
+			})
+		}()
+	})
+
+	globel.EventBus().Subscribe(event.NumberFillRollback+t.text.Text, func(event event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				// 进行外观上的变更:透明度降低
+				t.selectedColor = sColor
+				t.defaultColor = dColor
+				//通过状态再次进行颜色转变
+				if t.isSelected {
+					t.ToSelectedStatus()
+				} else {
+					t.ToDefaultStatus()
+				}
+			})
+		}()
 	})
 
 	// 事件订阅：选择数字变更事件
@@ -136,4 +149,32 @@ func (t *TappableNumberCell) eventSubscribe() {
 			})
 		}()
 	})
+
+	// 游戏刷新
+	globel.EventBus().Subscribe(event.GameRefresh, func(event event.Event) {
+		go func() {
+			fyne.DoAndWait(func() {
+				t.Refresh()
+			})
+		}()
+	})
+}
+
+// 抽出公共画图代码
+func (t *TappableNumberCell) drawHandle() {
+	// 获取对应的数字
+	num, _ := strconv.Atoi(t.text.Text)
+	fillQuantity := globel.NumberFillQuantity(num)
+	if fillQuantity == 9 {
+		t.selectedColor = color.RGBA{R: t.selectedColor.R, G: t.selectedColor.G, B: t.selectedColor.B, A: 180}
+		t.defaultColor = color.RGBA{R: t.defaultColor.R, G: t.defaultColor.G, B: t.defaultColor.B, A: 120}
+	} else {
+		t.selectedColor = sColor
+		t.defaultColor = dColor
+	}
+	if globel.GetDataStorage(globel.SelectedNum) == num {
+		t.ToSelectedStatus()
+	} else {
+		t.ToDefaultStatus()
+	}
 }
